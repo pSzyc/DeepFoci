@@ -1,16 +1,13 @@
 from scipy.ndimage import convolve
 import numpy as np
 import torch
+from tqdm import tqdm
 
-def predict_by_parts(model, data, crop_size):
-    
-    
+def predict_by_parts(model, data, crop_size):    
     border=16
 
-
     img_size = list(data.shape)
-    out_layers = model.out_size
-    
+    out_layers = model.out_size    
     
     final = np.zeros([out_layers] + img_size[1:4])
     
@@ -55,11 +52,10 @@ def predict_by_parts(model, data, crop_size):
         cy=cy+patch_size-border   
         
     corners.append([img_size[0]-patch_size,img_size[1]-patch_size])
-        
-    for corner in corners:
-        img_patch = data[:,corner[0]:corner[0]+patch_size,corner[1]:corner[1]+patch_size,:]
-        
-        img_patch = torch.unsqueeze(img_patch, 0)
+
+    for corner in tqdm(corners):
+        img_patch = data[:, corner[0]:corner[0]+patch_size, corner[1]:corner[1]+patch_size, :]
+        img_patch = img_patch.unsqueeze(0)
         res = model(img_patch)
         res = res[0,:,:,:,:]
         
@@ -69,7 +65,6 @@ def predict_by_parts(model, data, crop_size):
         final[:,corner[0]:corner[0]+patch_size,corner[1]:corner[1]+patch_size,:] = final[:,corner[0]:corner[0]+patch_size,corner[1]:corner[1]+patch_size,:] + res * W
         
         divide[:,corner[0]:corner[0]+patch_size,corner[1]:corner[1]+patch_size,:] = divide[:,corner[0]:corner[0]+patch_size,corner[1]:corner[1]+patch_size,:] + W
-        
         
     final = final / divide
         

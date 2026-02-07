@@ -8,13 +8,14 @@ from scipy.ndimage import zoom
 import sys
 
 sys.path.insert(0, "../utils")
+
 from utils.predict_by_parts import predict_by_parts
 from norm_percentile_nocrop import norm_percentile_nocrop
 from utils.mat2gray import mat2gray
 from evaluate_detections import detect
 
 
-folder_name_to_evaluate = 'C:\\Data\\Vicar\\foky_final_cleaning\\DeepFoci\\data_zenodo\\part2\\NHDF\\NHDF_30min PI\\IR 0,5Gy_30min PI\\0003\\'
+folder_name_to_evaluate = '../../data_zenodo/NHDF/NHDF_8h PI/IR 0,5Gy_8h PI/0001'
 
 detection_channel = 2 # red 0, green 1, red and green 2
 
@@ -25,11 +26,8 @@ normalization_percentile = 0.0001  #image is normalized into this percentile ran
 
 crop_size = [96,96]
 
-model = torch.load('detection_model.pt')
-
-
-device = torch.device("cuda:0")
-model = model.to(device)
+device = torch.device("cpu")
+model = torch.load('detection_model.pt', map_location=torch.device('cpu'))
 
 img_filename = folder_name_to_evaluate + '/data_53BP1.tif'
 
@@ -63,11 +61,10 @@ img = img_resized
 
 
 img = img.astype(np.float32)
-img = np.transpose(img,(3,0,1,2)).copy()
+img = np.transpose(img, (3, 0, 1, 2)).copy()
 img = torch.from_numpy(img)
-
+print(model)
 img = img.to(device)
-
 
 res = predict_by_parts(model,img, crop_size=crop_size)
 
