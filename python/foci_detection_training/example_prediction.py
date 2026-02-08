@@ -1,9 +1,7 @@
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
-import os
-from tifffile import TiffWriter
-from tifffile import imread, imsave
+from tifffile import imread
 from scipy.ndimage import zoom
 import sys
 

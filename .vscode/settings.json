@@ -1,0 +1,12 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/python/.venv/bin/python",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/python",
+        "${workspaceFolder}/python/foci_detection_training",
+        "${workspaceFolder}/python/nuclei_segmentation_training"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": false,
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
+}

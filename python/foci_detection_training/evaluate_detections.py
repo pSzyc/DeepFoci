@@ -3,8 +3,6 @@ from skimage.morphology import h_maxima
 from utils.dice_points import dice_points
 from tifffile import imread
 import numpy as np
-from multiprocessing import Pool
-import itertools
 
 
 def detect(img, T, h, d):
