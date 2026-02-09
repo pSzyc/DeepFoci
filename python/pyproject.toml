@@ -1,0 +1,26 @@
+[project]
+name = "deepfoci"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.10.*"
+dependencies = [
+  "edt==3.1.0",
+  "imagecodecs==2024.9.22",
+  "matplotlib==3.10.8",
+  "numpy==1.25.0",
+  "opencv-python==4.8.1.78",
+  "scikit-fmm==2025.6.23",
+  "scikit-image==0.25.2",
+  "scikit-learn==1.7.2",
+  "scipy==1.15.3",
+  "ipykernel==6.29.5",
+  "tqdm",
+  "torch==1.12.1",
+  "torchaudio==0.12.1",
+  "torchvision==0.13.1",
+]
+
+[tool.uv]
+index-url = "https://pypi.org/simple"
+extra-index-url = ["https://download.pytorch.org/whl/cu113"]
