@@ -14,7 +14,9 @@ from norm_percentile_nocrop import norm_percentile_nocrop
 from utils.predict_by_parts import predict_by_parts
 from utils.organized import split_nuclei, balloon
 
-src_path = Path("/home/pszyc/GoogleDrive/Studia/Ogniska/NHDF/NHDF_8h PI/IR 0,5Gy_8h PI")
+src_path = Path(
+    "/Users/pszyc/Library/CloudStorage/GoogleDrive-przemek.7678@gmail.com/My Drive/Studia/Ogniska/NHDF/"
+)
 model_path = "segmentation_model.pt"
 img_folders = sorted(src_path.glob("*"))
 
@@ -82,7 +84,7 @@ def predict_nn(data_path):
     mask_predicted /= mask_predicted.max()
 
     mask_split = split_nuclei(
-        mask_predicted > 0.75, minimal_nuclei_size, h, sphere, min_dist
+        mask_predicted > 0.5, minimal_nuclei_size, h, sphere, min_dist
     )
 
     mask_label_dilated = balloon(mask_split, sphere)
@@ -91,19 +93,8 @@ def predict_nn(data_path):
     mask_final = zoom(mask_label_dilated, factor, order=0)
     return mask_final
 
-src_paths = [
-    Path('/home/pszyc/GoogleDrive/Studia/Ogniska/NHDF/NHDF_8h PI/IR 1Gy_8h PI'),
-    Path('/home/pszyc/GoogleDrive/Studia/Ogniska/NHDF/NHDF_8h PI/IR 2Gy_8h PI'),
-    Path('/home/pszyc/GoogleDrive/Studia/Ogniska/NHDF/NHDF_8h PI/IR 4Gy_8h PI'),
-    Path('/home/pszyc/GoogleDrive/Studia/Ogniska/NHDF/NHDF_8h PI/IR 8Gy_8h PI')
- ]
 
-data_files = []
-
-for src_path in src_paths:
-    data_files.extend(list(src_path.glob("0*")))
-
-data_files.extend(list(Path('/home/pszyc/GoogleDrive/Studia/Ogniska/NHDF/NHDF_30min PI').rglob("0*")))
+data_files = list(src_path.rglob("00*"))
 
 data_files = [path for path in data_files if not (path / "nuclei_mask.npy").exists()]
 print(len(data_files))
