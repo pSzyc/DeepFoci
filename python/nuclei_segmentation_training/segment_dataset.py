@@ -15,10 +15,14 @@ from utils.predict_by_parts import predict_by_parts
 from utils.organized import split_nuclei, balloon
 
 src_path = Path(
-    "/Users/pszyc/Library/CloudStorage/GoogleDrive-przemek.7678@gmail.com/My Drive/Studia/Ogniska/NHDF/"
+    "/Users/pszyc/Library/CloudStorage/GoogleDrive-przemek.7678@gmail.com/My Drive/Studia/Ogniska/"
 )
+data_files = list(src_path.rglob("00*"))
+
+data_files = [path for path in data_files if not (path / "nuclei_mask.npy").exists()]
+print(data_files)
+exit()
 model_path = "segmentation_model.pt"
-img_folders = sorted(src_path.glob("*"))
 
 
 resized_img_size = [505, 681, 48]  # image is resized to this size
@@ -92,12 +96,6 @@ def predict_nn(data_path):
     factor = np.array(original_img_size) / np.array(mask_label_dilated.shape)
     mask_final = zoom(mask_label_dilated, factor, order=0)
     return mask_final
-
-
-data_files = list(src_path.rglob("00*"))
-
-data_files = [path for path in data_files if not (path / "nuclei_mask.npy").exists()]
-print(len(data_files))
 
 
 from tqdm import tqdm
