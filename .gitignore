@@ -9,3 +9,5 @@ data_zenodo/*
 
 *.gif
 *.csv
+
+*npy
