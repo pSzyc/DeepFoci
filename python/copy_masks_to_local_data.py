@@ -4,6 +4,21 @@ import numpy as np
 from scipy.ndimage import zoom
 from tqdm import tqdm
 
+FOV_X_UM = 90.0
+FOV_Y_UM = 67.2
+FOV_Z_UM = 15.0
+
+X_MIN = 4
+X_MAX = 18
+
+
+def get_voxel_volume_um3(mask_shape_zyx):
+    z_px, y_px, x_px = mask_shape_zyx
+    sx_um = FOV_X_UM / float(x_px)
+    sy_um = FOV_Y_UM / float(y_px)
+    sz_um = FOV_Z_UM / float(z_px)
+    return sx_um * sy_um * sz_um
+
 
 def parse_args() -> argparse.Namespace:
     default_src = Path(
@@ -31,11 +46,6 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Show what would be copied without writing files",
     )
-    parser.add_argument(
-        "--overwrite-cloud",
-        action="store_true",
-        help="Also overwrite source mask files in cloud with processed uint8 arrays",
-    )
     return parser.parse_args()
 
 
@@ -53,13 +63,7 @@ def main() -> None:
     copied_dirs = 0
     copied_files = 0
     skipped_candidates = 0
-
-    def resize_mask_nearest_local(mask_zyx, target_shape):
-        zoom_factors = np.array(target_shape, dtype=float) / np.array(
-            mask_zyx.shape, dtype=float
-        )
-        resized = zoom(mask_zyx, zoom=zoom_factors, order=0)
-        return resized.astype(mask_zyx.dtype, copy=False)
+    skipped_existing = 0
 
     def validate_uint8_compatible(
         arr: np.ndarray, arr_name: str, arr_path: Path
@@ -88,10 +92,19 @@ def main() -> None:
 
         relative_dir = candidate.relative_to(src_root)
         out_dir = dst_root / relative_dir
+        out_foci = out_dir / "foci_mask.npy"
+        out_nuclei = out_dir / "nuclei_mask.npy"
+
+        if args.skip_existing and out_foci.exists() and out_nuclei.exists():
+            skipped_existing += 1
+            if args.dry_run:
+                print(f"[DRY-RUN] skip existing: {out_foci}")
+                print(f"[DRY-RUN] skip existing: {out_nuclei}")
+            continue
 
         if args.dry_run:
-            print(f"[DRY-RUN] {foci_path} -> {out_dir / 'foci_mask.npy'}")
-            print(f"[DRY-RUN] {nuclei_path} -> {out_dir / 'nuclei_mask.npy'}")
+            print(f"[DRY-RUN] {foci_path} -> {out_foci}")
+            print(f"[DRY-RUN] {nuclei_path} -> {out_nuclei}")
             if args.overwrite_cloud:
                 print(f"[DRY-RUN] overwrite source: {foci_path}")
                 print(f"[DRY-RUN] overwrite source: {nuclei_path}")
@@ -100,23 +113,25 @@ def main() -> None:
             foci_arr = np.load(foci_path)
             nuclei_arr = np.load(nuclei_path)
 
-            # foci expected: (2, Z, Y, X); nuclei expected: (Y, X, Z)
-            if foci_arr.ndim == 4 and nuclei_arr.ndim == 3:
-                target_shape = tuple(foci_arr.shape[1:])
-                nuclei_zyx = np.transpose(nuclei_arr, (2, 0, 1))
-                nuclei_arr = resize_mask_nearest_local(nuclei_zyx, target_shape)
+            if foci_arr.ndim != 4:
+                raise ValueError(
+                    f"foci_mask.npy must be 4D (N/Z/Y/X), got shape {foci_arr.shape} at {foci_path}"
+                )
+            if nuclei_arr.ndim != 3:
+                raise ValueError(
+                    f"nuclei_mask.npy must be 3D (Z/Y/X), got shape {nuclei_arr.shape} at {nuclei_path}"
+                )
+            if foci_arr.shape[1:] != nuclei_arr.shape:
+                raise ValueError(
+                    f"Spatial shape mismatch between foci and nuclei at {candidate}: "
+                    f"foci.shape[1:]={foci_arr.shape[1:]} != nuclei.shape={nuclei_arr.shape}"
+                )
 
             validate_uint8_compatible(foci_arr, "foci_mask", foci_path)
             validate_uint8_compatible(nuclei_arr, "nuclei_mask", nuclei_path)
 
-            np.save(out_dir / "foci_mask.npy", foci_arr.astype(np.uint8, copy=False))
-            np.save(
-                out_dir / "nuclei_mask.npy", nuclei_arr.astype(np.uint8, copy=False)
-            )
-
-            if args.overwrite_cloud:
-                np.save(foci_path, foci_arr.astype(np.uint8, copy=False))
-                np.save(nuclei_path, nuclei_arr.astype(np.uint8, copy=False))
+            np.save(out_foci, foci_arr.astype(np.uint8, copy=False))
+            np.save(out_nuclei, nuclei_arr.astype(np.uint8, copy=False))
 
         copied_dirs += 1
         copied_files += 2
@@ -127,7 +142,8 @@ def main() -> None:
     print(f"Matched directories copied: {copied_dirs}")
     print(f"Files copied: {copied_files}")
     print(f"Candidates skipped (missing one/both masks): {skipped_candidates}")
-    print(f"Overwrite cloud: {args.overwrite_cloud}")
+    print(f"Directories skipped (already exist locally): {skipped_existing}")
+    print(f"Skip existing: {args.skip_existing}")
 
 
 if __name__ == "__main__":
