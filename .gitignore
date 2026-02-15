@@ -11,3 +11,4 @@ data_zenodo/*
 *.csv
 
 *npy
+*json
